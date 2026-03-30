@@ -1,23 +1,49 @@
 # Incuverse 🚀
 
-A full-stack application consisting of a backend service and a frontend client.
+## 📌 Project Overview
+
+Incuverse is an **AI-driven financial planning platform** focused on retirement readiness analysis. It combines a FastAPI-powered backend with a modern frontend to deliver intelligent, personalized financial insights.
+
+At its core, the system uses **financial modeling + AI (LangChain + OpenAI)** to:
+
+* Analyze user financial data
+* Project retirement outcomes using compound growth models
+* Generate actionable strategies to improve financial health
+* Simulate “what-if” scenarios for better decision-making
+
+This project reflects real-world system design with a clear separation between backend intelligence and frontend experience.
+
+---
+
+## 🧠 Key Capabilities
+
+* 📊 **Retirement Projections**
+  Calculates long-term retirement corpus using financial formulas and assumptions like inflation and returns.
+
+* 🤖 **AI-Powered Insights**
+  Uses LangChain to generate human-like financial analysis and recommendations.
+
+* 📈 **Strategy Recommendations**
+  Provides actionable steps to improve retirement readiness.
+
+* 🔁 **Simulation Engine**
+  Allows users to test different financial scenarios (e.g., increasing savings, delaying retirement).
+
+* ⚠️ **Risk Assessment**
+  Evaluates financial risks and provides mitigation suggestions.
 
 ---
 
 ## 📁 Project Structure
 
-```
+```bash
 incuverse/
 │
-├── finai-backend/        # Backend service (API, database handling)
-│   ├── .env              # Environment variables (NOT pushed to GitHub)
-│   └── ...
+├── finai-backend/        # FastAPI + LangChain backend (core intelligence)
 │
-├── new-frontend/         # Frontend application (UI)
-│   ├── .env              # Environment variables (NOT pushed to GitHub)
+├── new-frontend/         # Frontend UI (React/Vite)
 │   ├── public/
 │   ├── src/
-│   └── ...
 │
 └── README.md
 ```
@@ -35,25 +61,31 @@ cd incuverse
 
 ---
 
-### 2. Backend Setup
+### 2. Backend Setup (FastAPI + AI Engine)
 
 ```bash
 cd finai-backend
-npm install
+python -m venv venv
+
+# Activate environment
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-Create a `.env` file:
+Create `.env`:
 
 ```env
-PORT=5000
-DB_URL=your_database_url
-API_KEY=your_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 Run backend:
 
 ```bash
-npm start
+uvicorn main:app --reload
 ```
 
 ---
@@ -63,57 +95,68 @@ npm start
 ```bash
 cd ../new-frontend
 npm install
-```
-
-Create a `.env` file:
-
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-Run frontend:
-
-```bash
 npm run dev
 ```
 
 ---
 
+## 🔗 API Access
+
+Once running:
+
+* API → http://localhost:8000
+* Docs → http://localhost:8000/docs
+
+---
+
 ## 🔒 Environment Variables
 
-* `.env` files are **ignored** using `.gitignore`
-* Use `.env.example` to share structure without exposing secrets
+* `.env` files are **NOT pushed to GitHub**
+* Use `.env.example` for safe sharing
 
 ---
 
 ## 📦 Tech Stack
 
-* Frontend: React / Vite
-* Backend: Node.js / Express
-* Package Manager: npm
+**Backend**
+
+* FastAPI
+* LangChain
+* OpenAI API
+* Pydantic
+
+**Frontend**
+
+* React / Vite
 
 ---
 
-## 🚫 Files Ignored
+## 🚫 Ignored Files
 
-* `node_modules/`
 * `.env`
+* `node_modules/`
 * `dist/`, `build/`
-* logs and temporary files
+* logs and temp files
 
 ---
 
-## 🧠 Notes
+## 🧠 Why This Project Matters
 
-* Make sure backend runs before frontend
-* Update API URLs if deploying
-* Never commit `.env` files
+Most financial tools are static calculators.
+Incuverse goes further by combining **AI reasoning with financial modeling**, making outputs:
+
+* Context-aware
+* Personalized
+* Actionable
+
+This is closer to how real fintech products operate.
 
 ---
 
 ## 📌 Future Improvements
 
-* Add authentication
-* Improve error handling
-* Deploy backend & frontend
+* User authentication system
+* Database integration (user history tracking)
+* Deployment (Docker + cloud)
+* Advanced portfolio optimization
 
