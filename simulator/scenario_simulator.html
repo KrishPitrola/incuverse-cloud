@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Retirement Planner - Enhanced</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 { font-size: 40px; margin-bottom: 8px; }
+        .header p { font-size: 18px; opacity: 0.95; }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        
+        .ai-selector h3 { margin-bottom: 15px; color: #333; }
+        .ai-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+        .ai-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            border: 3px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 600;
+        }
+        .ai-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .ai-btn.active { border-color: #667eea; background: #f0f4ff; }
+        .ai-btn .badge { font-size: 24px; margin-bottom: 5px; }
+        
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-weight: 600; margin-bottom: 8px; color: #555; }
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .input-group input:focus { outline: none; border-color: #667eea; }
+        
+        .scenario-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .scenario-card h3 { color: #667eea; margin-bottom: 15px; }
+        
+        .slider-group { margin-bottom: 15px; }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .compare-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .compare-button:hover { transform: scale(1.02); }
+        .compare-button:disabled { opacity: 0.5; cursor: not-allowed; transform: scale(1); }
+        
+        .results-section { display: none; }
+        .results-section.show { display: block; animation: slideUp 0.5s ease; }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .ai-analysis {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .ai-analysis h3 { color: #667eea; margin-bottom: 12px; font-size: 22px; }
+        .ai-analysis .model-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 14px;
+            border-radius: 15px;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        .ai-analysis p { color: #444; line-height: 1.7; font-size: 16px; }
+        
+        .recommendations {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #ffc107;
+            margin-bottom: 25px;
+        }
+        .recommendations h4 { color: #856404; margin-bottom: 12px; }
+        .recommendations ul { margin-left: 20px; }
+        .recommendations li { margin: 8px 0; color: #856404; line-height: 1.6; }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .chart-box h4 {
+            text-align: center;
+            margin-bottom: 18px;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .scenarios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 25px;
+        }
+        
+        .result-card {
+            border-radius: 12px;
+            padding: 25px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .result-card:hover { transform: translateY(-5px); }
+        
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0.25));
+            z-index: 1;
+        }
+        
+        .result-card-content { position: relative; z-index: 2; }
+        .result-card h3 { font-size: 24px; margin-bottom: 18px; }
+        
+        .result-stat {
+            margin: 12px 0;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+        .result-stat strong {
+            font-size: 22px;
+            display: block;
+            margin-top: 6px;
+        }
+        
+        .lifestyle-badge {
+            display: inline-block;
+            padding: 10px 18px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 12px;
+            font-size: 15px;
+        }
+        
+        .best-badge {
+            background: gold;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-left: 10px;
+            font-weight: 700;
+        }
+        
+        .metric-highlight {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI Retirement Scenario Simulator</h1>
+            <p>Plan Your Financial Future with Smart Analysis</p>
+        </div>
+        
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">Your Financial Profile</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Current Age</label>
+                    <input type="number" id="currentAge" value="25" min="18" max="60">
+                </div>
+                <div class="input-group">
+                    <label>Monthly Income (₹)</label>
+                    <input type="number" id="monthlyIncome" value="80000" step="1000">
+                </div>
+                <div class="input-group">
+                    <label>Fixed Expenses (₹)</label>
+                    <input type="number" id="fixedExpenses" value="30000" step="1000">
+                </div>
+                <div class="input-group">
+                    <label>Variable Expenses (₹)</label>
+                    <input type="number" id="variableExpenses" value="20000" step="1000">
+                </div>
+                <div class="input-group">
+                    <label>Current Savings (₹)</label>
+                    <input type="number" id="currentSavings" value="200000" step="10000">
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">Build Retirement Scenarios</h2>
+            
+            <div class="scenario-card">
+                <h3>Scenario 1: Conservative Plan</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px; font-style: italic;">A safe, traditional approach focusing on steady growth and lower risk investments.</p>
+                <div class="slider-group">
+                    <label><span>Retirement Age:</span><span id="retire1-value">60</span></label>
+                    <input type="range" id="retire1" min="40" max="65" value="60" oninput="updateSlider('retire1')">
+                </div>
+                <div class="slider-group">
+                    <label><span>Monthly Savings:</span><span id="save1-value">₹15,000</span></label>
+                    <input type="range" id="save1" min="10000" max="100000" value="15000" step="1000" oninput="updateSlider('save1')">
+                </div>
+            </div>
+            
+            <div class="scenario-card">
+                <h3>Scenario 2: Balanced Plan</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px; font-style: italic;">A moderate approach balancing growth potential with manageable risk and savings requirements.</p>
+                <div class="slider-group">
+                    <label><span>Retirement Age:</span><span id="retire2-value">58</span></label>
+                    <input type="range" id="retire2" min="40" max="65" value="58" oninput="updateSlider('retire2')">
+                </div>
+                <div class="slider-group">
+                    <label><span>Monthly Savings:</span><span id="save2-value">₹20,000</span></label>
+                    <input type="range" id="save2" min="10000" max="100000" value="20000" step="1000" oninput="updateSlider('save2')">
+                </div>
+            </div>
+            
+            <div class="scenario-card">
+                <h3>Scenario 3: Aggressive Plan</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px; font-style: italic;">An ambitious strategy targeting early retirement through higher savings and growth-focused investments.</p>
+                <div class="slider-group">
+                    <label><span>Retirement Age:</span><span id="retire3-value">55</span></label>
+                    <input type="range" id="retire3" min="40" max="65" value="55" oninput="updateSlider('retire3')">
+                </div>
+                <div class="slider-group">
+                    <label><span>Monthly Savings:</span><span id="save3-value">₹30,000</span></label>
+                    <input type="range" id="save3" min="10000" max="100000" value="30000" step="1000" oninput="updateSlider('save3')">
+                </div>
+            </div>
+            
+            <button class="compare-button" onclick="compareScenarios()" id="compareBtn">
+                Compare Scenarios
+            </button>
+        </div>
+        
+        <div class="card results-section" id="resultsSection">
+            <h2 style="margin-bottom: 20px;">Scenario Analysis & Recommendations</h2>
+            
+            <div class="recommendations" id="recommendationsBox" style="display:none;">
+                <h4>Actionable Recommendations</h4>
+                <ul id="recommendationsList"></ul>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h4>Retirement Corpus Comparison</h4>
+                    <canvas id="corpusChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>Corpus vs Required Amount</h4>
+                    <canvas id="adequacyChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>Monthly Pension Projection</h4>
+                    <canvas id="pensionChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>Wealth Creation Breakdown</h4>
+                    <canvas id="wealthChart"></canvas>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">Scenario Details</h3>
+            <div class="scenarios-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+
+        function updateSlider(id) {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + '-value');
+            if (id.startsWith('save')) {
+                display.textContent = '₹' + parseInt(slider.value).toLocaleString('en-IN');
+            } else {
+                display.textContent = slider.value;
+            }
+        }
+
+        async function compareScenarios() {
+            const btn = document.getElementById('compareBtn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing Scenarios...';
+            
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.remove('show');
+            
+            const profile = {
+                user_id: 'demo_user',
+                current_age: parseInt(document.getElementById('currentAge').value),
+                monthly_income: parseFloat(document.getElementById('monthlyIncome').value),
+                fixed_expenses: parseFloat(document.getElementById('fixedExpenses').value),
+                variable_expenses: parseFloat(document.getElementById('variableExpenses').value),
+                current_savings: parseFloat(document.getElementById('currentSavings').value)
+            };
+            
+            const scenarios = [
+                {
+                    name: 'Conservative Plan',
+                    retirement_age: parseInt(document.getElementById('retire1').value),
+                    monthly_savings: parseInt(document.getElementById('save1').value)
+                },
+                {
+                    name: 'Balanced Plan',
+                    retirement_age: parseInt(document.getElementById('retire2').value),
+                    monthly_savings: parseInt(document.getElementById('save2').value)
+                },
+                {
+                    name: 'Aggressive Plan',
+                    retirement_age: parseInt(document.getElementById('retire3').value),
+                    monthly_savings: parseInt(document.getElementById('save3').value)
+                }
+            ];
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/simulate-scenarios', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({...profile, scenarios: scenarios})
+                });
+                
+                if (!response.ok) throw new Error('API request failed');
+                const data = await response.json();
+                displayResults(data);
+                
+            } catch (error) {
+                alert('Error: ' + error.message + '\n\nMake sure:\n1. Backend is running (uvicorn main:app --reload --port 8000)');
+                console.error(error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Compare Scenarios';
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.add('show');
+            
+            // Display recommendations
+            if (data.recommendations && data.recommendations.length > 0) {
+                const recBox = document.getElementById('recommendationsBox');
+                const recList = document.getElementById('recommendationsList');
+                recBox.style.display = 'block';
+                recList.innerHTML = '';
+                data.recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.textContent = rec;
+                    recList.appendChild(li);
+                });
+            }
+            
+            createCharts(data.chart_data);
+            displayScenarioCards(data);
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function createCharts(chartData) {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => chart && chart.destroy());
+            charts = {};
+            
+            // 1. Corpus Comparison (Bar Chart)
+            const ctx1 = document.getElementById('corpusChart').getContext('2d');
+            charts.corpus = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Final Corpus (₹ Cr)',
+                        data: chartData.corpus_values.map(v => v / 10000000),
+                        backgroundColor: chartData.colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => '₹' + ctx.parsed.y.toFixed(2) + ' Cr'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Corpus (₹ Crores)' }
+                        }
+                    }
+                }
+            });
+            
+            // 2. Adequacy Chart (Grouped Bar)
+            const ctx2 = document.getElementById('adequacyChart').getContext('2d');
+            charts.adequacy = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Final Corpus',
+                            data: chartData.corpus_values.map(v => v / 10000000),
+                            backgroundColor: '#10b981'
+                        },
+                        {
+                            label: 'Required Corpus',
+                            data: chartData.required_corpus.map(v => v / 10000000),
+                            backgroundColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ₹' + ctx.parsed.y.toFixed(2) + ' Cr'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount (₹ Crores)' }
+                        }
+                    }
+                }
+            });
+            
+            // 3. Monthly Pension (Line Chart)
+            const ctx3 = document.getElementById('pensionChart').getContext('2d');
+            charts.pension = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Monthly Pension (₹)',
+                        data: chartData.monthly_pension,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') + '/month'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Monthly Amount (₹)' }
+                        }
+                    }
+                }
+            });
+            
+            // 4. Wealth Creation (Stacked Bar)
+            const ctx4 = document.getElementById('wealthChart').getContext('2d');
+            charts.wealth = new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Your Investment',
+                            data: chartData.total_invested.map(v => v / 10000000),
+                            backgroundColor: '#f59e0b'
+                        },
+                        {
+                            label: 'Returns Generated',
+                            data: chartData.wealth_created.map(v => v / 10000000),
+                            backgroundColor: '#10b981'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ₹' + ctx.parsed.y.toFixed(2) + ' Cr'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { 
+                            stacked: true,
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount (₹ Crores)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayScenarioCards(data) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            
+            data.scenarios.forEach(scenario => {
+                const isBest = scenario.name === data.best_scenario;
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.style.background = scenario.color;
+                
+                card.innerHTML = `
+                    <div class="result-card-content">
+                        <h3>${scenario.name}${isBest ? '<span class="best-badge">RECOMMENDED</span>' : ''}</h3>
+                        
+                        <div class="metric-highlight">
+                            <div class="result-stat">Retire at age <strong>${scenario.retirement_age}</strong></div>
+                            <div class="result-stat">Years to save <strong>${scenario.years_to_retirement}</strong></div>
+                        </div>
+                        
+                        <div class="result-stat">Monthly Savings Required<strong>₹${scenario.monthly_savings.toLocaleString('en-IN')}</strong></div>
+                        <div class="result-stat">Final Retirement Corpus<strong>₹${(scenario.total_corpus / 10000000).toFixed(2)} Cr</strong></div>
+                        <div class="result-stat">Safe Monthly Pension<strong>₹${scenario.monthly_pension.toLocaleString('en-IN')}</strong></div>
+                        <div class="result-stat">Corpus Adequacy<strong>${scenario.corpus_ratio}x of requirement</strong></div>
+                        
+                        <div class="lifestyle-badge">${scenario.lifestyle}</div>
+                        <div style="margin-top: 10px; font-size: 13px; opacity: 0.9;">${scenario.description}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.onload = function() {
+            ['retire1', 'save1', 'retire2', 'save2', 'retire3', 'save3'].forEach(updateSlider);
+            
+            fetch('http://localhost:8000/health')
+                .then(r => r.json())
+                .then(data => {
+                    console.log('Backend ready:', data);
+                })
+                .catch(() => alert('⚠️ Backend not running!\n\nStart with: uvicorn main:app --reload --port 8000'));
+        };
+    </script>
+</body>
+</html>

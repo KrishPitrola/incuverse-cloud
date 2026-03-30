@@ -1,0 +1,28 @@
+# Environment files
+.env
+.env.*
+*.env
+!.env.example
+
+# Node / frontend
+node_modules/
+build/
+dist/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+.DS_Store
+
+# IDE/editor
+.vscode/
+.idea/
