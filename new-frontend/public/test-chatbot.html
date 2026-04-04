@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chatbot</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-chatbot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: red;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.5);
+        }
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            background-color: white;
+            border: 2px solid red;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            z-index: 9998;
+        }
+        .chat-header {
+            background-color: red;
+            color: white;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .chat-input {
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .chat-input input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Chatbot Page</h1>
+    <p>If you can see a red circle with a chat emoji in the bottom-right corner, the chatbot concept works!</p>
+    
+    <div class="test-chatbot" onclick="toggleChat()">💬</div>
+    
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">FinAI Assistant</div>
+        <div class="chat-messages" id="chatMessages">
+            <div>Hi! I'm FinAI, your retirement planning assistant. How can I help you?</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+        </div>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const messages = document.getElementById('chatMessages');
+                
+                // Add user message
+                const userMessage = document.createElement('div');
+                userMessage.textContent = 'You: ' + input.value;
+                userMessage.style.color = 'blue';
+                userMessage.style.marginBottom = '10px';
+                messages.appendChild(userMessage);
+                
+                // Add bot response
+                const botMessage = document.createElement('div');
+                botMessage.textContent = 'FinAI: Thanks for your message! This is a test response.';
+                botMessage.style.color = 'green';
+                botMessage.style.marginBottom = '10px';
+                messages.appendChild(botMessage);
+                
+                input.value = '';
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
