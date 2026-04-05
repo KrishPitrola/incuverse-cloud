@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calculator, Target, TrendingUp, DollarSign, User, Clock, Lightbulb } from 'lucide-react';
 import retirementAPI from '../services/api';
+import { useProfileSync } from '../hooks/useProfileSync';
 
 const RetirementPlanning = () => {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ const RetirementPlanning = () => {
   const [errors, setErrors] = useState({});
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationResults, setCalculationResults] = useState(null);
+  const USER_ID = localStorage.getItem('incuverse_user_id') || 'user_demo_001';
+const { forceSave } = useProfileSync(USER_ID, formData, setFormData);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -441,6 +444,16 @@ const RetirementPlanning = () => {
                   <i className="fas fa-undo mr-2"></i>
                   Reset Form
                 </button>
+                <button
+  type="button"
+  onClick={async () => {
+    const res = await forceSave();
+    if (res?.success) alert('Profile saved to cloud ✓');
+  }}
+  className="btn btn-secondary flex-1"
+>
+  💾 Save Profile
+</button>
                 <button
                   type="button"
                   onClick={loadSampleData}

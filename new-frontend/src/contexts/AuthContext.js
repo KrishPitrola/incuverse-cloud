@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on app start
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -25,11 +24,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     setIsLoading(true);
-    
-    // Simulate API call
+
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Demo credentials
         if (email === 'demo@retirementplanner.com' && password === 'demo123') {
           const userData = {
             id: 'demo-user-1',
@@ -41,12 +38,12 @@ export const AuthProvider = ({ children }) => {
             monthlyIncome: 100000,
             isDemo: true
           };
-          setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
-          setIsLoading(false);
+          localStorage.setItem('incuverse_user_id', userData.id);
           resolve(userData);
+          setUser(userData);
+          setIsLoading(false);
         } else {
-          // For other users, create a simple user
           const userData = {
             id: `user-${Date.now()}`,
             email: email,
@@ -57,10 +54,11 @@ export const AuthProvider = ({ children }) => {
             monthlyIncome: 50000,
             isDemo: false
           };
-          setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
-          setIsLoading(false);
+          localStorage.setItem('incuverse_user_id', userData.id);
           resolve(userData);
+          setUser(userData);
+          setIsLoading(false);
         }
       }, 1000);
     });
@@ -68,7 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     setIsLoading(true);
-    
+
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const newUser = {
@@ -81,10 +79,11 @@ export const AuthProvider = ({ children }) => {
           monthlyIncome: parseInt(userData.monthlyIncome),
           isDemo: false
         };
-        setUser(newUser);
         localStorage.setItem('user', JSON.stringify(newUser));
-        setIsLoading(false);
+        localStorage.setItem('incuverse_user_id', newUser.id);
         resolve(newUser);
+        setUser(newUser);
+        setIsLoading(false);
       }, 1000);
     });
   };
@@ -92,6 +91,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('incuverse_user_id');
   };
 
   const isAuthenticated = () => {

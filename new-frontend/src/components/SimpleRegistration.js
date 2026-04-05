@@ -27,7 +27,6 @@ const SimpleRegistration = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -41,7 +40,7 @@ const SimpleRegistration = () => {
 
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -72,12 +71,38 @@ const SimpleRegistration = () => {
 
     setIsLoading(true);
     try {
-      await register(formData);
-      navigate('/dashboard');
-    } catch (error) {
-      setErrors({ 
-        general: 'Registration failed. Please try again.' 
+      const registeredUser = await register(formData);
+      const userId = registeredUser?.id || formData.email;
+
+      // POST profile to DynamoDB before navigating
+      const response = await fetch(`http://localhost:8001/api/profile/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile_data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            age: formData.age,
+            location: formData.location,
+            monthlyIncome: formData.monthlyIncome,
+          }
+        })
       });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error('Profile save failed:', response.status, errBody);
+        // Non-blocking: still navigate even if DynamoDB save fails
+      } else {
+        console.log('✅ Profile saved to DynamoDB for user:', userId);
+      }
+
+      navigate('/dashboard');   // ← only navigates after fetch completes
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ general: 'Registration failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -288,7 +313,7 @@ const SimpleRegistration = () => {
               </button>
             </form>
 
-            {/* Features */}
+           {/* Features */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">

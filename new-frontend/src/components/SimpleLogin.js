@@ -48,22 +48,28 @@ const SimpleLogin = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
-    } catch (error) {
-      setErrors({ 
-        general: 'Login failed. Please try again.' 
-      });
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    const loggedInUser = await login(formData.email, formData.password);
+    
+    // Persist user_id for DynamoDB profile sync
+    if (loggedInUser?.id) {
+      localStorage.setItem('incuverse_user_id', loggedInUser.id);
     }
-  };
+
+    navigate('/dashboard');
+  } catch (error) {
+    setErrors({ 
+      general: 'Login failed. Please try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const fillDemoCredentials = () => {
     setFormData({

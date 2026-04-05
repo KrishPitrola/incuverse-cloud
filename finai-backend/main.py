@@ -4,6 +4,9 @@ Provides endpoints for retirement analysis, strategy recommendations, simulation
 """
 
 import os
+from dotenv import load_dotenv
+load_dotenv()  # ← must be FIRST before any other imports
+
 import json
 import logging
 from typing import Dict, Any, List, Optional
@@ -11,11 +14,11 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from dotenv import load_dotenv
 
-# Import our custom modules
+# Import our custom modules AFTER load_dotenv()
+from utils.dynamo_profile import save_profile, get_profile
 from models.user_input import (
-    UserInput, AnalysisResult, StrategyResponse, 
+    UserInput, AnalysisResult, StrategyResponse,
     SimulationRequest, SimulationResult, RetirementProjection
 )
 from utils.formulas import retirement_projection, simulate_scenario, calculate_risk_score
@@ -29,9 +32,6 @@ from utils.s3_uploader import upload_report_to_s3
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Load environment variables
-load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -65,6 +65,25 @@ class UserData(BaseModel):
     existing_savings: float = Field(0, ge=0)
     risk_profile:     str   = Field("moderate")
 
+class ProfileRequest(BaseModel):
+    profile_data: dict
+
+@app.post("/api/profile/{user_id}")
+async def upsert_profile(user_id: str, body: ProfileRequest):
+    """Save or update user profile in DynamoDB."""
+    try:
+        saved = save_profile(user_id, body.profile_data)
+        return {"success": True, "updated_at": saved["updated_at"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/profile/{user_id}")
+async def fetch_profile(user_id: str):
+    """Load user profile from DynamoDB."""
+    item = get_profile(user_id)
+    if not item:
+        return {"success": False, "profile": None}
+    return {"success": True, "profile": item["profile"], "updated_at": item["updated_at"]}
 
 class ScenarioResult(BaseModel):
     scenario_name:    str
