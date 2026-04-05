@@ -93,6 +93,8 @@ class ScenarioResponse(BaseModel):
     chart_data: Dict
     recommendations: List[str]
 
+ 
+
 user_profiles_db = {}
 
 # Gemini setup (same as yours)
@@ -823,6 +825,8 @@ def generate_recommendations(scenarios: List[Dict], request: ScenarioRequest) ->
 async def root():
     return {"status": "FinAI Simulator", "version": "2.0"}
 
+
+
 @app.get("/health")
 async def health():
     return {
@@ -835,6 +839,50 @@ async def health():
         }
     }
 
+
+# ── PDF Report Generation ─────────────────────────────────────────────────────
+
+from utils.pdf_generator import generate_retirement_report
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'finai-backend'))
+
+from utils.pdf_generator import generate_retirement_report as _gen_report
+from utils.s3_uploader import upload_report_to_s3 as _upload_s3
+
+sys.path.pop(0)  # clean up path after imports
+from utils.s3_uploader import upload_report_to_s3
+from pydantic import BaseModel as _BaseModel
+from typing import List as _List
+
+class _UserData(_BaseModel):
+    age: int
+    retirement_age: int
+    monthly_income: float
+    monthly_expense: float
+    existing_savings: float = 0
+    risk_profile: str = "moderate"
+
+class _ScenarioResult(_BaseModel):
+    scenario_name: str
+    projected_corpus: float
+    monthly_sip: float
+    xirr: float
+    feasibility: str
+
+class _GenerateReportRequest(_BaseModel):
+    user_data: _UserData
+    scenario_results: _List[_ScenarioResult]
+    user_id: str
+
+@app.post("/api/generate-report")
+def generate_report(body: _GenerateReportRequest):
+    pdf_bytes = _gen_report(
+        user_data=body.user_data.model_dump(),
+        scenario_results=[s.model_dump() for s in body.scenario_results],
+    )
+    download_url = _upload_s3(pdf_bytes, body.user_id)
+    return {"success": True, "download_url": download_url}
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

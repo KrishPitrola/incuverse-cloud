@@ -1,14 +1,16 @@
 """
 FastAPI backend for AI-Driven Retirement Planner.
-Provides endpoints for retirement analysis, strategy recommendations, and simulations.
+Provides endpoints for retirement analysis, strategy recommendations, simulations, and report generation.
 """
 
 import os
 import json
-from typing import Dict, Any, List
+import logging
+from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 # Import our custom modules
@@ -19,6 +21,14 @@ from models.user_input import (
 from utils.formulas import retirement_projection, simulate_scenario, calculate_risk_score
 from chains.simple_analysis import create_analysis_chain
 from chains.simple_strategy import create_strategy_chain
+
+# Import PDF and S3 utilities
+from utils.pdf_generator import generate_retirement_report
+from utils.s3_uploader import upload_report_to_s3
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +45,7 @@ app = FastAPI(
 # Configure CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # React dev server
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],  # React dev server + catch-all
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,6 +54,37 @@ app.add_middleware(
 # Global variables for chains (initialized on startup)
 analysis_chain = None
 strategy_chain = None
+
+# ── Request / Response models for Reports ─────────────────────────────────────
+
+class UserData(BaseModel):
+    age:              int   = Field(..., ge=18, le=100)
+    retirement_age:   int   = Field(..., ge=30, le=80)
+    monthly_income:   float = Field(..., ge=0)
+    monthly_expense:  float = Field(..., ge=0)
+    existing_savings: float = Field(0, ge=0)
+    risk_profile:     str   = Field("moderate")
+
+
+class ScenarioResult(BaseModel):
+    scenario_name:    str
+    projected_corpus: float
+    monthly_sip:      float
+    xirr:             float
+    feasibility:      str
+
+
+class GenerateReportRequest(BaseModel):
+    user_data:        UserData
+    scenario_results: List[ScenarioResult]
+    user_id:          str = Field(..., min_length=1)
+
+
+class GenerateReportResponse(BaseModel):
+    success:      bool
+    download_url: str
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.on_event("startup")
 async def startup_event():
@@ -77,6 +118,7 @@ async def root():
             "analyze": "/analyze - Analyze retirement readiness",
             "suggestions": "/suggestions - Get strategy recommendations", 
             "simulate": "/simulate - Run retirement simulations",
+            "generate_report": "/api/generate-report - Generate PDF report",
             "health": "/health - Health check"
         }
     }
@@ -94,11 +136,6 @@ async def health_check():
 async def analyze_retirement(user_input: UserInput):
     """
     Analyze user's retirement readiness and provide AI-driven insights.
-    
-    This endpoint:
-    1. Calculates retirement projection using compound interest
-    2. Runs AI analysis for insights and recommendations
-    3. Returns comprehensive analysis results
     """
     try:
         # Calculate retirement projection
@@ -222,11 +259,6 @@ async def analyze_retirement(user_input: UserInput):
 async def get_strategy_suggestions(user_input: UserInput):
     """
     Get personalized strategy recommendations for improving retirement readiness.
-    
-    This endpoint:
-    1. Runs the analysis chain to understand the user's situation
-    2. Generates 3 specific, actionable strategies
-    3. Returns prioritized recommendations
     """
     try:
         # Calculate retirement projection first
@@ -324,12 +356,6 @@ async def get_strategy_suggestions(user_input: UserInput):
 async def simulate_retirement(simulation_request: SimulationRequest):
     """
     Run retirement simulations with modified parameters.
-    
-    This endpoint:
-    1. Takes original user input and modified parameters
-    2. Calculates new projections with modified parameters
-    3. Compares original vs. simulated results
-    4. Provides recommendations based on differences
     """
     try:
         # Get original projection
@@ -396,6 +422,31 @@ async def simulate_retirement(simulation_request: SimulationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
 
+@app.post("/api/generate-report", response_model=GenerateReportResponse)
+def generate_report(body: GenerateReportRequest):
+    """
+    Generate a retirement planning PDF, upload to S3, and return a pre-signed URL.
+    """
+    logger.info("Generating report for user_id=%s", body.user_id)
+
+    try:
+        pdf_bytes = generate_retirement_report(
+            user_data=body.user_data.dict(),
+            scenario_results=[s.dict() for s in body.scenario_results],
+        )
+    except Exception as exc:
+        logger.exception("PDF generation failed")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {exc}")
+
+    try:
+        download_url = upload_report_to_s3(pdf_bytes, body.user_id)
+    except RuntimeError as exc:
+        logger.exception("S3 upload failed")
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    logger.info("Report ready for user_id=%s  url_prefix=%.60s...", body.user_id, download_url)
+    return GenerateReportResponse(success=True, download_url=download_url)
+
 @app.get("/sample-inputs")
 async def get_sample_inputs():
     """Get sample input data for testing the API endpoints."""
@@ -434,10 +485,15 @@ async def get_sample_inputs():
                 "method": "POST",
                 "url": "/simulate", 
                 "description": "Run retirement simulations"
+            },
+            "generate_report": {
+                "method": "POST",
+                "url": "/api/generate-report",
+                "description": "Generate a retirement planning PDF and upload to S3"
             }
         }
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

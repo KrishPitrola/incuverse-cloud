@@ -18,9 +18,8 @@ import {
 } from 'lucide-react';
 import retirementAPI from '../services/api';
 import Chart from 'chart.js/auto';
-import PDFReportGenerator from '../components/PDFReportGenerator';
 import DemoChatbot, { ChatButton } from '../components/DemoChatbot';
-
+import PDFReportGenerator from '../components/PDFReportGenerator';
 // Add custom styles for sliders
 const sliderStyles = `
   .slider {
@@ -243,6 +242,7 @@ const Results = () => {
         simulationResults: !!simulationResults
       });
       
+      
       await PDFReportGenerator.downloadReport(
         formData,
         analysis,
@@ -252,9 +252,9 @@ const Results = () => {
       );
       
       console.log('PDF generation completed successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF report. Please try again.');
+    }catch (error) {
+  console.error('Error generating PDF:', error);
+  alert('Error generating PDF: ' + error.message); // show actual error message
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -488,26 +488,7 @@ const Results = () => {
                 <ArrowLeft className="mr-2" />
                 Back to Planning
               </button>
-              <button
-                onClick={() => {
-                  console.log('Test PDF button clicked');
-                  // Simple test to verify PDFReportGenerator works
-                  try {
-                    const testData = {
-                      age: 30,
-                      retirement_age: 60,
-                      monthly_savings: 25000,
-                      retirement_goal: 50000000
-                    };
-                    PDFReportGenerator.downloadReport(testData, {summary: 'Test analysis'}, {readiness_percentage: 75, projected_corpus: 40000000}, {strategies: []}, null);
-                  } catch (error) {
-                    console.error('Test PDF failed:', error);
-                  }
-                }}
-                className="btn btn-outline"
-              >
-                Test PDF
-              </button>
+            
               <button
                 onClick={runSimulation}
                 disabled={isLoading}
